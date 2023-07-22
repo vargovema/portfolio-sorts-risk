@@ -1,31 +1,27 @@
-
 ## 0.0 Libraries ----
 
-ifelse(!require("RPostgres"), install.packages("RPostgres"), library(RPostgres))
-ifelse(!require("RSQLite"), install.packages("RSQLite"), library(RSQLite))
-ifelse(!require("lubridate"), install.packages("lubridate"), library(lubridate))
-ifelse(!require("tidyverse"), install.packages("tidyverse"), library(tidyverse))
-ifelse(!require("dplyr"), install.packages("dplyr"), library(dplyr))
-ifelse(!require("tidyr"), install.packages("tidyr"), library(tidyr))
-ifelse(!require("xts"), install.packages("xts"), library(xts))
-ifelse(!require("data.table"), install.packages("data.table"), library(data.table)) # nolint
-ifelse(!require("PerformanceAnalytics"), install.packages("PerformanceAnalytics"), library(PerformanceAnalytics)) # nolint
-ifelse(!require("frenchdata"), install.packages("frenchdata"), library(frenchdata)) # nolint
-ifelse(!require("ggplot2"), install.packages("ggplot2"), library(ggplot2))
-ifelse(!require("knitr"), install.packages("knitr"), library(knitr))
-ifelse(!require("stargazer"), install.packages("stargazer"), library(stargazer))
+if (!require("RPostgres")) install.packages("RPostgres"); library(RPostgres)
+if (!require("RSQLite")) install.packages("RSQLite"); library(RSQLite)
+if (!require("lubridate")) install.packages("lubridate"); library(lubridate)
+if (!require("tidyverse")) install.packages("tidyverse"); library(tidyverse)
+if (!require("dplyr")) install.packages("dplyr"); library(dplyr)
+if (!require("tidyr")) install.packages("tidyr"); library(tidyr)
+if (!require("xts")) install.packages("xts"); library(xts)
+if (!require("data.table")) install.packages("data.table"); library(data.table)
+if (!require("PerformanceAnalytics")) install.packages("PerformanceAnalytics"); library(PerformanceAnalytics)
+if (!require("frenchdata")) install.packages("frenchdata"); library(frenchdata)
+if (!require("ggplot2")) install.packages("ggplot2"); library(ggplot2)
+if (!require("knitr")) install.packages("knitr"); library(knitr)
+if (!require("stargazer")) install.packages("stargazer"); library(stargazer)
 
-
-options(tinytex.verbose = TRUE)
 setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
-
 
 ## 0.1 Data Collection ----
 
 ## Data connection
 # Establish a connection to the WRDS (Wharton Research Data Services) database
-username <- "emav" # credentials need to be entered here
-password <- "jSH8L&qhU#hq"  # credentials need to be entered here
+username <- "" # credentials need to be entered here
+password <- ""  # credentials need to be entered here
 
 start_date <- ymd("1960-01-01")
 end_date <- ymd("2023-01-01")
@@ -43,7 +39,6 @@ wrds <- dbConnect(
 # Retrieve COMPUSTAT & CRSP data
 
 # Get the linktable to be able to join Compustat and CRSP data using gvkey and permno
-
 linktable_db <- tbl(
   wrds,
   in_schema("crsp", "ccmxpf_linktable")
@@ -53,8 +48,8 @@ linktable_db <- tbl(
 # Select specific columns for the linktable and collect the data into a local dataframe
 linktable <- linktable_db %>% 
   filter(linktype %in% c("LU", "LC") &
-         linkprim %in% c("P", "C") &
-         usedflag == 1) %>% 
+           linkprim %in% c("P", "C") &
+           usedflag == 1) %>% 
   select(permno = lpermno, gvkey, linkdt, linkenddt) %>% 
   collect() %>% 
   mutate(linkenddt = replace_na(linkenddt, today()))
@@ -155,7 +150,7 @@ crsp_data <- tbl(wrds, in_schema("crsp", "msf")) %>%
 
 # Filter CRSP data based on a date range
 crsp_data_date_filtered <- crsp_data[date >= ymd("1976-01-01") & 
-                                     date <= ymd("2023-01-01")]
+                                       date <= ymd("2023-01-01")]
 
 # Make the final link table by joining CRSP data with the linktable
 links <- crsp_data_date_filtered %>% 
@@ -167,7 +162,7 @@ links <- crsp_data_date_filtered %>%
 # Merge CRSP data and links to enrich the data
 crsp_enriched <- merge(crsp_data_date_filtered, links, 
                        by = c("permno", "date"), all.x = T)
-                       
+
 # Add the month and year columns to the enriched data
 crsp_enriched[, c("month", "year") := list(month(date), year(date))]
 
@@ -501,8 +496,9 @@ dev.off()
 FF5 <- download_french_data("Fama/French 5 Factors (2x3)")
 FF5 <- FF5$subsets$data[[1]]
 
-
 FF5 <- FF5[c(FF5$date >= 199901 & FF5$date <= 202212), ]
+
+colnames(FF5)[2] <- "Mkt.RF"
 
 df_longshort_monthly <- cbind(df_longshort_monthly, FF5[,2:7])
 df_longshort_monthly[,5:10] <- df_longshort_monthly[,5:10]/100
